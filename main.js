@@ -247,7 +247,6 @@
 
   function generateLevel(levelNumber) {
     const tier = levelNumber - 1;
-    const groundY = getGroundY();
 
     let count;
     if (levelNumber <= 4) count = 1;
@@ -277,7 +276,7 @@
       const floorH = 22 + ((levelNumber + i) % 3);
       const h = floors * floorH + 26;
       const x = playableX + slotWidth * i + gap * i + (slotWidth - w) * 0.5;
-      const y = groundY - h;
+      const y = getGroundY() - h;
 
       buildings.push({
         x,
@@ -731,8 +730,6 @@
   }
 
   function updateBuildings(dt) {
-    const groundY = getGroundY();
-
     state.buildings.forEach((b) => {
       if (b.destroyed) return;
 
@@ -943,11 +940,11 @@
 
     ctx.rotate(angle);
     ctx.fillStyle = "#2f405c";
-    roundRect(-8, -8, 54, 16, 8);
+    roundRectPath(-8, -8, 54, 16, 8);
     ctx.fill();
 
     ctx.fillStyle = "#9eb2d4";
-    roundRect(-6, -6, 50, 12, 6);
+    roundRectPath(-6, -6, 50, 12, 6);
     ctx.fill();
 
     ctx.restore();
@@ -1236,6 +1233,10 @@
     ctx.closePath();
   }
 
+  function roundRect(x, y, w, h, r) {
+    roundRectPath(x, y, w, h, r);
+  }
+
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
@@ -1322,7 +1323,6 @@
     hintBubble.classList.remove("show");
   }
 
-  // Audio
   let audioCtx = null;
   let musicGain = null;
   let sfxGain = null;
