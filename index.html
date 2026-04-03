@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+  />
+  <title>崩崩樂園</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="topBar">
+      <div class="stat">
+        <span class="label">關卡</span>
+        <span id="levelText">1/30</span>
+      </div>
+      <div class="stat">
+        <span class="label">時間</span>
+        <span id="timeText">45</span>
+      </div>
+      <div class="stat">
+        <span class="label">子彈</span>
+        <span id="bulletText">重砲彈</span>
+      </div>
+      <div class="stat">
+        <span class="label">摧毀率</span>
+        <span id="destroyText">0%</span>
+      </div>
+    </div>
+
+    <div id="gameWrap">
+      <canvas id="gameCanvas"></canvas>
+
+      <div id="overlay" class="screen visible">
+        <div class="panel">
+          <h1 id="overlayTitle">崩崩樂園</h1>
+          <p id="overlayDesc">
+            單指拖曳瞄準，放開發射。<br />
+            所有子彈無限，限時內把建築轟到 85% 以上就過關。
+          </p>
+          <div id="menuButtons" class="btnGroup">
+            <button id="startBtn" class="primaryBtn">開始遊戲</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="hintBubble">拖曳左下角砲台來瞄準，放手發射</div>
+    </div>
+
+    <div id="bottomBar">
+      <div id="bulletButtons" class="bulletButtons"></div>
+
+      <div class="controlRow">
+        <button id="musicBtn" class="iconBtn">音樂：開</button>
+        <button id="sfxBtn" class="iconBtn">音效：開</button>
+        <button id="restartBtn" class="iconBtn">重來</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
