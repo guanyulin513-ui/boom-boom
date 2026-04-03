@@ -74,8 +74,8 @@
       ring: "#f5c458",
       radius: 11,
       speedScale: 1.0,
-      damageRadius: 14,
-      damagePower: 0.26,
+      damageRadius: 16,
+      damagePower: 0.95,
       shock: 0.02,
       trail: "#f9f2d6",
     },
@@ -85,8 +85,8 @@
       ring: "#ff94eb",
       radius: 12,
       speedScale: 0.92,
-      damageRadius: 20,
-      damagePower: 0.32,
+      damageRadius: 24,
+      damagePower: 1.15,
       shock: 0.03,
       trail: "#ffd7fb",
     },
@@ -96,8 +96,8 @@
       ring: "#7be0ff",
       radius: 9,
       speedScale: 1.22,
-      damageRadius: 9,
-      damagePower: 0.20,
+      damageRadius: 10,
+      damagePower: 0.82,
       shock: 0.01,
       pierceLine: 24,
       trail: "#d9fbff",
@@ -108,8 +108,8 @@
       ring: "#c5f6ff",
       radius: 11,
       speedScale: 0.95,
-      damageRadius: 16,
-      damagePower: 0.18,
+      damageRadius: 18,
+      damagePower: 0.72,
       shock: 0.04,
       trail: "#c9f6ff",
     },
@@ -284,7 +284,7 @@
         style,
         floors,
         floorH,
-        toughness: 2.4 + progress * 1.2 + i * 0.18,
+        toughness: 1.6 + progress * 0.7 + i * 0.12,
         capShape: ["flat", "round", "crown"][(levelNumber + i) % 3],
         sign: (levelNumber + i) % 4 === 0,
       });
@@ -344,7 +344,7 @@
     overlay.classList.add("visible");
     overlayTitle.textContent = "崩崩樂園";
     overlayDesc.innerHTML =
-      "單指拖曳瞄準，放開發射。<br>建築不會倒塌，只會局部破損；瞄準完好區域慢慢摧毀整棟。";
+      "單指拖曳瞄準，放開發射。<br>每一發命中都會破壞一部分，持續瞄準完整區域，慢慢摧毀整棟建築。";
     menuButtons.innerHTML = "";
     menuButtons.appendChild(startBtn);
     startBtn.textContent = "開始遊戲";
@@ -394,7 +394,7 @@
     overlay.classList.add("visible");
     overlayTitle.textContent = "全部通關！";
     overlayDesc.innerHTML =
-      "你已經把整座玩具城市慢慢轟成碎片。<br>要不要從第一關再來一次？";
+      "你已經把整座玩具城市一點一點轟成碎片。<br>要不要從第一關再來一次？";
     menuButtons.innerHTML = "";
 
     const again = makeMenuButton("從第一關再玩一次", "primaryBtn", () => {
@@ -537,15 +537,23 @@
         const power = clamp(1 - dist / radius, 0, 1);
         const old = building.damage[r][c];
 
-        let add = power * type.damagePower / building.toughness * 0.65;
+        let centerBoost = 1;
+        if (power > 0.85) centerBoost = 1.35;
+        else if (power > 0.6) centerBoost = 1.15;
 
-        if (shot.type === "pierce") {
-          add *= 0.95;
-          if (Math.abs(dx) < type.pierceLine * 0.22) add += 0.05;
+        let add = power * type.damagePower / building.toughness * 1.2 * centerBoost;
+
+        if (power > 0.72) {
+          add = Math.max(add, 0.42);
+        } else if (power > 0.45) {
+          add = Math.max(add, 0.26);
+        } else {
+          add = Math.max(add, 0.14);
         }
 
-        if (shot.type === "shock") {
-          add *= 0.7;
+        if (shot.type === "pierce") {
+          add *= 1.15;
+          if (Math.abs(dx) < type.pierceLine * 0.22) add += 0.10;
         }
 
         building.damage[r][c] = clamp(old + add, 0, 1);
@@ -567,7 +575,7 @@
         const rr = clamp(lineR, 0, building.rows - 1);
         const cc = clamp(c, 0, building.cols - 1);
         const old = building.damage[rr][cc];
-        const delta = 0.025 / building.toughness;
+        const delta = 0.08 / building.toughness;
         building.damage[rr][cc] = clamp(old + delta, 0, 1);
         totalDamage += building.damage[rr][cc] - old;
       }
@@ -1068,15 +1076,15 @@
     for (let r = 0; r < b.rows; r++) {
       for (let c = 0; c < b.cols; c++) {
         const dmg = b.damage[r][c];
-        if (dmg < 0.34) continue;
+        if (dmg < 0.05) continue;
 
         const x = b.x + c * cellW;
         const y = b.y + r * cellH;
         const cx = x + cellW * 0.5;
         const cy = y + cellH * 0.5;
-        const rr = Math.min(cellW, cellH) * (0.24 + dmg * 0.42);
+        const rr = Math.min(cellW, cellH) * (0.22 + dmg * 0.82);
 
-        ctx.fillStyle = dmg >= 1 ? "#000000" : hexToRgba("#19212a", 0.55 + dmg * 0.35);
+        ctx.fillStyle = dmg >= 1 ? "#000000" : hexToRgba("#19212a", 0.45 + dmg * 0.4);
         ctx.beginPath();
         ctx.arc(cx, cy, rr, 0, Math.PI * 2);
         ctx.fill();
@@ -1084,7 +1092,7 @@
         if (dmg >= 1) {
           ctx.fillStyle = "rgba(0,0,0,0.6)";
           ctx.beginPath();
-          ctx.arc(cx - rr * 0.15, cy - rr * 0.1, rr * 0.72, 0, Math.PI * 2);
+          ctx.arc(cx - rr * 0.12, cy - rr * 0.08, rr * 0.74, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -1175,102 +1183,6 @@
       ctx.fill();
     });
     ctx.globalAlpha = 1;
-  }
-
-  function roundRectPath(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-  }
-
-  function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
-  }
-
-  function hexToRgba(hex, a) {
-    const h = hex.replace("#", "");
-    const n = parseInt(h, 16);
-    const r = (n >> 16) & 255;
-    const g = (n >> 8) & 255;
-    const b = n & 255;
-    return `rgba(${r},${g},${b},${a})`;
-  }
-
-  function shadeColor(hex, amount) {
-    const h = hex.replace("#", "");
-    const num = parseInt(h, 16);
-    let r = (num >> 16) & 255;
-    let g = (num >> 8) & 255;
-    let b = num & 255;
-    r = clamp(r + amount, 0, 255);
-    g = clamp(g + amount, 0, 255);
-    b = clamp(b + amount, 0, 255);
-    return `rgb(${r},${g},${b})`;
-  }
-
-  function pointerPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches ? e.touches[0] : e;
-    return {
-      x: touch.clientX - rect.left,
-      y: touch.clientY - rect.top,
-    };
-  }
-
-  function onPointerDown(e) {
-    if (state.screen !== "playing") return;
-
-    ensureAudioStarted();
-    inactiveTime = 0;
-
-    const p = pointerPos(e);
-    const dx = p.x - state.cannon.x;
-    const dy = p.y - state.cannon.y;
-    const dist = Math.hypot(dx, dy);
-
-    if (dist < 90 && state.canShoot) {
-      state.dragging = true;
-      state.dragStart = { x: state.cannon.x, y: state.cannon.y };
-      state.dragCurrent = p;
-      hideHint();
-      e.preventDefault();
-    }
-  }
-
-  function onPointerMove(e) {
-    if (!state.dragging) return;
-
-    const p = pointerPos(e);
-    state.dragCurrent = p;
-    const dx = state.dragStart.x - state.dragCurrent.x;
-    const dy = state.dragStart.y - state.dragCurrent.y;
-    const angle = Math.atan2(dy, dx);
-    state.cannon.angle = clamp(angle, -2.5, -0.15);
-    inactiveTime = 0;
-    e.preventDefault();
-  }
-
-  function onPointerUp(e) {
-    if (!state.dragging) return;
-    fireShot();
-    state.dragging = false;
-    state.dragStart = null;
-    state.dragCurrent = null;
-    e.preventDefault();
-  }
-
-  function showHint() {
-    clearTimeout(hintTimer);
-    hintBubble.classList.add("show");
-    hintTimer = setTimeout(() => hintBubble.classList.remove("show"), 2200);
-  }
-
-  function hideHint() {
-    hintBubble.classList.remove("show");
   }
 
   let audioCtx = null;
