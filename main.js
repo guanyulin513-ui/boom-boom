@@ -52,7 +52,6 @@
     buildings: [],
     particles: [],
     explosions: [],
-    cracks: [],
     destructionRatio: 0,
     totalArea: 0,
     destroyedArea: 0,
@@ -68,7 +67,6 @@
     cannon: { x: 70, y: 0, angle: -0.75, power: 0 },
   };
 
-  // 調弱子彈威力，避免一炮整棟爆掉
   const bulletTypes = {
     heavy: {
       name: "重砲彈",
@@ -76,9 +74,9 @@
       ring: "#f5c458",
       radius: 11,
       speedScale: 1.0,
-      damageRadius: 18,
-      damagePower: 0.32,
-      shock: 0.05,
+      damageRadius: 14,
+      damagePower: 0.26,
+      shock: 0.02,
       trail: "#f9f2d6",
     },
     blast: {
@@ -87,9 +85,9 @@
       ring: "#ff94eb",
       radius: 12,
       speedScale: 0.92,
-      damageRadius: 28,
-      damagePower: 0.42,
-      shock: 0.12,
+      damageRadius: 20,
+      damagePower: 0.32,
+      shock: 0.03,
       trail: "#ffd7fb",
     },
     pierce: {
@@ -98,10 +96,10 @@
       ring: "#7be0ff",
       radius: 9,
       speedScale: 1.22,
-      damageRadius: 12,
-      damagePower: 0.22,
-      shock: 0.04,
-      pierceLine: 42,
+      damageRadius: 9,
+      damagePower: 0.20,
+      shock: 0.01,
+      pierceLine: 24,
       trail: "#d9fbff",
     },
     shock: {
@@ -110,9 +108,9 @@
       ring: "#c5f6ff",
       radius: 11,
       speedScale: 0.95,
-      damageRadius: 22,
-      damagePower: 0.24,
-      shock: 0.22,
+      damageRadius: 16,
+      damagePower: 0.18,
+      shock: 0.04,
       trail: "#c9f6ff",
     },
   };
@@ -223,7 +221,6 @@
     state.buildings = [];
     state.particles = [];
     state.explosions = [];
-    state.cracks = [];
     state.destructionRatio = 0;
     state.totalArea = 0;
     state.destroyedArea = 0;
@@ -287,7 +284,6 @@
         style,
         floors,
         floorH,
-        // 拉高耐久
         toughness: 2.4 + progress * 1.2 + i * 0.18,
         capShape: ["flat", "round", "crown"][(levelNumber + i) % 3],
         sign: (levelNumber + i) % 4 === 0,
@@ -304,7 +300,7 @@
     const cols = BUILDING_GRID_COLS;
     const rows = clamp(Math.ceil(config.h / 12), BUILDING_GRID_ROWS_BASE, 28);
     const damage = Array.from({ length: rows }, () => Array(cols).fill(0));
-    const initialCellArea = (config.w / cols) * (config.h / rows);
+    const cellArea = (config.w / cols) * (config.h / rows);
 
     const building = {
       x: config.x,
@@ -317,14 +313,11 @@
       toughness: config.toughness,
       capShape: config.capShape,
       sign: config.sign,
-      tilt: 0,
-      tiltVel: 0,
-      collapseBias: 0,
       destroyed: false,
       damage,
       rows,
       cols,
-      cellArea: initialCellArea,
+      cellArea,
       totalArea: config.w * config.h,
       destroyedArea: 0,
       cracks: [],
@@ -351,7 +344,7 @@
     overlay.classList.add("visible");
     overlayTitle.textContent = "崩崩樂園";
     overlayDesc.innerHTML =
-      "單指拖曳瞄準，放開發射。<br>子彈無限，限時內把建築轟到 85% 即可過關。";
+      "單指拖曳瞄準，放開發射。<br>建築不會倒塌，只會局部破損；瞄準完好區域慢慢摧毀整棟。";
     menuButtons.innerHTML = "";
     menuButtons.appendChild(startBtn);
     startBtn.textContent = "開始遊戲";
@@ -377,9 +370,7 @@
     });
 
     const next = makeMenuButton(
-      success
-        ? (state.levelIndex < TOTAL_LEVELS - 1 ? "下一關" : "查看結果")
-        : "回到首頁",
+      success ? (state.levelIndex < TOTAL_LEVELS - 1 ? "下一關" : "查看結果") : "回到首頁",
       "primaryBtn",
       () => {
         playClick();
@@ -403,7 +394,7 @@
     overlay.classList.add("visible");
     overlayTitle.textContent = "全部通關！";
     overlayDesc.innerHTML =
-      "你已經把整座玩具城市轟到天翻地覆。<br>要不要從第一關再來一次？";
+      "你已經把整座玩具城市慢慢轟成碎片。<br>要不要從第一關再來一次？";
     menuButtons.innerHTML = "";
 
     const again = makeMenuButton("從第一關再玩一次", "primaryBtn", () => {
@@ -462,9 +453,9 @@
     state.canShoot = false;
     state.cooldown = SHOT_COOLDOWN;
     inactiveTime = 0;
-    state.cameraShake += 4.5;
+    state.cameraShake += 2.5;
 
-    if (navigator.vibrate) navigator.vibrate(16);
+    if (navigator.vibrate) navigator.vibrate(12);
     playShoot(state.selectedBullet);
     spawnMuzzleFlash(
       state.cannon.x + Math.cos(angle) * 30,
@@ -475,17 +466,17 @@
   }
 
   function spawnMuzzleFlash(x, y, color) {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = 70 + Math.random() * 90;
+      const s = 60 + Math.random() * 70;
       state.particles.push({
         x,
         y,
         vx: Math.cos(a) * s,
         vy: Math.sin(a) * s,
-        life: 0.24 + Math.random() * 0.2,
-        maxLife: 0.45,
-        size: 2 + Math.random() * 4,
+        life: 0.22 + Math.random() * 0.16,
+        maxLife: 0.38,
+        size: 2 + Math.random() * 3,
         color,
       });
     }
@@ -495,25 +486,25 @@
     state.explosions.push({
       x,
       y,
-      r: 10,
+      r: 8,
       maxR: radius,
-      life: 0.28,
-      maxLife: 0.28,
+      life: 0.24,
+      maxLife: 0.24,
       color,
     });
 
-    const count = Math.min(42, Math.floor(radius * 0.7));
+    const count = Math.min(28, Math.floor(radius * 0.55));
     for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = 80 + Math.random() * 220;
+      const s = 70 + Math.random() * 150;
       state.particles.push({
         x,
         y,
         vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s - 10,
-        life: 0.45 + Math.random() * 0.45,
-        maxLife: 0.85,
-        size: 2 + Math.random() * 5.5,
+        vy: Math.sin(a) * s - 8,
+        life: 0.35 + Math.random() * 0.35,
+        maxLife: 0.7,
+        size: 2 + Math.random() * 4,
         color,
       });
     }
@@ -525,7 +516,7 @@
     const localY = hitY - building.y;
     const cellW = building.w / building.cols;
     const cellH = building.h / building.rows;
-    const radius = type.damageRadius * (shot.type === "blast" ? 1.2 : 1);
+    const radius = type.damageRadius;
     const radiusSq = radius * radius;
 
     let destroyedCells = 0;
@@ -555,7 +546,6 @@
 
         if (shot.type === "shock") {
           add *= 0.7;
-          if (localY > building.h * 0.72) building.collapseBias += 0.015 * power;
         }
 
         building.damage[r][c] = clamp(old + add, 0, 1);
@@ -571,22 +561,20 @@
 
     if (shot.type === "pierce") {
       const lineR = Math.round(localY / cellH);
-      for (let c = 0; c < building.cols; c++) {
+      const centerC = Math.round(localX / cellW);
+
+      for (let c = centerC - 1; c <= centerC + 1; c++) {
         const rr = clamp(lineR, 0, building.rows - 1);
-        const old = building.damage[rr][c];
-        const delta = 0.03 / building.toughness;
-        building.damage[rr][c] = clamp(old + delta, 0, 1);
-        totalDamage += building.damage[rr][c] - old;
+        const cc = clamp(c, 0, building.cols - 1);
+        const old = building.damage[rr][cc];
+        const delta = 0.025 / building.toughness;
+        building.damage[rr][cc] = clamp(old + delta, 0, 1);
+        totalDamage += building.damage[rr][cc] - old;
       }
     }
 
     const addedArea = totalDamage * building.cellArea;
     building.destroyedArea = clamp(building.destroyedArea + addedArea, 0, building.totalArea);
-
-    const force = type.shock + type.damagePower * 0.03;
-    const relative = (localX / Math.max(building.w, 1)) - 0.5;
-    building.tiltVel += relative * force * 0.4;
-    building.tilt += relative * force * 0.02;
 
     building.cracks.push({
       x: localX,
@@ -600,59 +588,40 @@
       spawnDebrisFromBuilding(building, hitX, hitY, destroyedCells, shot.type);
     }
 
-    if (buildingBaseWeakness(building) > 0.55) {
-      building.collapseBias += 0.01;
-      building.tiltVel += (Math.random() - 0.5) * 0.004;
-    }
-
     playBuildingHit(shot.type);
     recalcDestroyedRatio();
   }
 
-  function buildingBaseWeakness(building) {
-    const checkRows = Math.max(2, Math.floor(building.rows * 0.18));
-    let total = 0;
-    let damage = 0;
-    for (let r = building.rows - checkRows; r < building.rows; r++) {
-      for (let c = 0; c < building.cols; c++) {
-        total += 1;
-        damage += building.damage[r][c];
-      }
-    }
-    return total ? damage / total : 0;
-  }
-
   function spawnDebrisFromBuilding(building, x, y, count, shotType) {
-    const style = building.style;
-    const pCount = Math.min(18, 4 + count);
+    const pCount = Math.min(14, 4 + count);
 
     for (let i = 0; i < pCount; i++) {
       const a = Math.random() * Math.PI * 2;
-      const s = 60 + Math.random() * 140;
+      const s = 55 + Math.random() * 110;
       state.particles.push({
         x,
         y,
         vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s - 15,
-        life: 0.45 + Math.random() * 0.35,
-        maxLife: 0.8,
-        size: 2 + Math.random() * 4,
+        vy: Math.sin(a) * s - 10,
+        life: 0.32 + Math.random() * 0.28,
+        maxLife: 0.6,
+        size: 2 + Math.random() * 3.5,
         color: Math.random() > 0.5 ? building.style.body2 : building.style.trim,
       });
     }
 
     if (shotType === "blast") {
-      spawnExplosion(x, y, 30, "#ff9ff1");
+      spawnExplosion(x, y, 22, "#ff9ff1");
       playExplosion("blast");
-      state.cameraShake += 5;
-      if (navigator.vibrate) navigator.vibrate(20);
-    } else if (shotType === "shock") {
-      spawnExplosion(x, y, 24, "#c1f8ff");
-      playExplosion("shock");
-      state.cameraShake += 4;
+      state.cameraShake += 3.5;
       if (navigator.vibrate) navigator.vibrate(16);
+    } else if (shotType === "shock") {
+      spawnExplosion(x, y, 18, "#c1f8ff");
+      playExplosion("shock");
+      state.cameraShake += 2.8;
+      if (navigator.vibrate) navigator.vibrate(12);
     } else {
-      spawnExplosion(x, y, 18, "#fff1b5");
+      spawnExplosion(x, y, 14, "#fff1b5");
       playImpact("wall", true);
     }
   }
@@ -673,7 +642,7 @@
 
       if (shot.y + shot.radius >= getGroundY()) {
         shot.y = getGroundY() - shot.radius;
-        spawnExplosion(shot.x, shot.y, 20, "#fef0b5");
+        spawnExplosion(shot.x, shot.y, 16, "#fef0b5");
         playExplosion("ground");
         shot.alive = false;
         return;
@@ -718,7 +687,6 @@
     const localX = shot.x - building.x;
     const localY = shot.y - building.y;
     const cell = cellAt(building, localX, localY);
-
     if (!cell) return false;
 
     const [r, c] = cell;
@@ -737,15 +705,8 @@
     state.buildings.forEach((b) => {
       if (b.destroyed) return;
 
-      const baseWeak = buildingBaseWeakness(b);
       const totalRatio = clamp(b.destroyedArea / b.totalArea, 0, 1);
-
-      b.tiltVel += (b.collapseBias + baseWeak * 0.22 + totalRatio * 0.08) * 0.00035;
-      b.tilt *= 0.995;
-      b.tiltVel *= 0.985;
-      b.tilt += b.tiltVel;
-
-      if (Math.abs(b.tilt) > 0.6 || totalRatio > 0.985) {
+      if (totalRatio > 0.995) {
         destroyBuildingCompletely(b);
       }
 
@@ -772,7 +733,6 @@
     const remaining = building.totalArea - building.destroyedArea;
     building.destroyedArea = building.totalArea;
     building.destroyed = true;
-    building.tilt = 0.42 * (Math.random() > 0.5 ? 1 : -1);
 
     for (let r = 0; r < building.rows; r++) {
       for (let c = 0; c < building.cols; c++) {
@@ -783,28 +743,28 @@
     spawnExplosion(
       building.x + building.w * 0.5,
       building.y + building.h * 0.52,
-      Math.max(40, building.w * 0.45),
+      Math.max(28, building.w * 0.32),
       "#fff2c8"
     );
 
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 18; i++) {
       const px = building.x + Math.random() * building.w;
       const py = building.y + Math.random() * building.h;
       state.particles.push({
         x: px,
         y: py,
-        vx: (Math.random() - 0.5) * 220,
-        vy: -50 - Math.random() * 140,
-        life: 0.6 + Math.random() * 0.7,
-        maxLife: 1.1,
-        size: 3 + Math.random() * 4,
+        vx: (Math.random() - 0.5) * 150,
+        vy: -40 - Math.random() * 80,
+        life: 0.45 + Math.random() * 0.4,
+        maxLife: 0.85,
+        size: 2 + Math.random() * 3,
         color: Math.random() > 0.5 ? building.style.body2 : building.style.trim,
       });
     }
 
     state.destroyedArea += Math.max(0, remaining);
-    state.cameraShake += 10;
-    if (navigator.vibrate) navigator.vibrate(28);
+    state.cameraShake += 5.5;
+    if (navigator.vibrate) navigator.vibrate(20);
     playFall();
     recalcDestroyedRatio();
   }
@@ -990,16 +950,7 @@
   function drawBuildings() {
     state.buildings.forEach((b) => {
       if (b.destroyed && b.destroyedArea >= b.totalArea) return;
-
-      ctx.save();
-      const pivotX = b.x + b.w * 0.5;
-      const pivotY = b.y + b.h;
-      ctx.translate(pivotX, pivotY);
-      ctx.rotate(b.tilt);
-      ctx.translate(-pivotX, -pivotY);
-
       drawSingleBuilding(b);
-      ctx.restore();
     });
   }
 
@@ -1236,10 +1187,6 @@
     ctx.closePath();
   }
 
-  function roundRect(x, y, w, h, r) {
-    roundRectPath(x, y, w, h, r);
-  }
-
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
@@ -1332,24 +1279,30 @@
   let musicNodes = [];
 
   function ensureAudioStarted() {
-    if (state.startedAudio) return;
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      musicGain = audioCtx.createGain();
+      sfxGain = audioCtx.createGain();
+      musicGain.connect(audioCtx.destination);
+      sfxGain.connect(audioCtx.destination);
+      musicGain.gain.value = state.musicOn ? 0.22 : 0;
+      sfxGain.gain.value = state.sfxOn ? 0.22 : 0;
+    }
 
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    musicGain = audioCtx.createGain();
-    sfxGain = audioCtx.createGain();
-    musicGain.connect(audioCtx.destination);
-    sfxGain.connect(audioCtx.destination);
-    musicGain.gain.value = state.musicOn ? 0.13 : 0;
-    sfxGain.gain.value = state.sfxOn ? 0.22 : 0;
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
 
-    startMusicLoop();
-    state.startedAudio = true;
+    if (!state.startedAudio) {
+      startMusicLoop();
+      state.startedAudio = true;
+    }
   }
 
   function setMusicEnabled(enabled) {
     state.musicOn = enabled;
     if (musicGain) {
-      musicGain.gain.linearRampToValueAtTime(enabled ? 0.13 : 0, audioCtx.currentTime + 0.08);
+      musicGain.gain.linearRampToValueAtTime(enabled ? 0.22 : 0, audioCtx.currentTime + 0.08);
     }
     updateHUD();
   }
@@ -1366,22 +1319,22 @@
     if (!audioCtx) return;
     stopMusicLoop();
 
-    const tempo = 110;
+    const tempo = 108;
     const beat = 60 / tempo;
     const startAt = audioCtx.currentTime + 0.05;
-    const progression = [261.63, 329.63, 392.0, 440.0, 349.23, 392.0, 293.66, 329.63];
+    const progression = [261.63, 293.66, 329.63, 392.0, 349.23, 329.63, 293.66, 261.63];
 
     for (let bar = 0; bar < 16; bar++) {
       const root = progression[bar % progression.length];
       const t = startAt + bar * beat * 2;
 
-      scheduleTone(root, t, beat * 1.7, "triangle", 0.075, musicGain);
-      scheduleTone(root * 2, t + beat * 0.25, beat * 0.28, "sine", 0.045, musicGain);
-      scheduleTone(root * 1.5, t + beat * 0.85, beat * 0.24, "sine", 0.04, musicGain);
-      scheduleTone(root * 2.5, t + beat * 1.25, beat * 0.26, "sine", 0.04, musicGain);
+      scheduleTone(root, t, beat * 1.6, "triangle", 0.11, musicGain);
+      scheduleTone(root * 2, t + beat * 0.25, beat * 0.25, "sine", 0.07, musicGain);
+      scheduleTone(root * 1.5, t + beat * 0.85, beat * 0.22, "sine", 0.06, musicGain);
+      scheduleTone(root * 2, t + beat * 1.25, beat * 0.22, "sine", 0.06, musicGain);
 
-      scheduleKick(t, 0.05, 0.18, musicGain, true);
-      scheduleKick(t + beat, 0.04, 0.15, musicGain, true);
+      scheduleKick(t, 0.05, 0.20, musicGain, true);
+      scheduleKick(t + beat, 0.04, 0.16, musicGain, true);
     }
 
     const totalLength = beat * 2 * 16;
@@ -1483,8 +1436,8 @@
       oneShot(180, 0.08, "triangle", 0.09, 0.002, sfxGain, 0.9, now);
       oneShot(110, 0.14, "sawtooth", 0.11, 0.002, sfxGain, 0.65, now + 0.01);
     } else if (shotType === "heavy") {
-      oneShot(140, 0.1, "triangle", 0.1, 0.002, sfxGain, 0.78, now);
-      oneShot(90, 0.12, "sine", 0.08, 0.002, sfxGain, 0.7, now + 0.01);
+      oneShot(140, 0.10, "triangle", 0.10, 0.002, sfxGain, 0.78, now);
+      oneShot(90, 0.12, "sine", 0.08, 0.002, sfxGain, 0.70, now + 0.01);
     } else if (shotType === "pierce") {
       oneShot(280, 0.06, "square", 0.08, 0.002, sfxGain, 0.92, now);
       oneShot(180, 0.08, "triangle", 0.05, 0.002, sfxGain, 0.85, now + 0.005);
@@ -1502,7 +1455,7 @@
 
   function playFall() {
     if (!audioCtx || !state.sfxOn) return;
-    oneShot(96, 0.11, "triangle", 0.1, 0.002, sfxGain, 0.55);
+    oneShot(96, 0.11, "triangle", 0.10, 0.002, sfxGain, 0.55);
   }
 
   function playWin() {
